@@ -18,9 +18,31 @@ data Nonomino = Nonomino {
     p8 :: Point
 } deriving Show
 
+-- Crea un nonomino a partir de una lista de puntos
+nonominoFromList nonomino = Nonomino (nonomino !! 0) (nonomino !! 1) (nonomino !! 2) (nonomino !! 3) (nonomino !! 4) (nonomino !! 5) (nonomino !! 6) (nonomino !! 7) (nonomino !! 8)
 
-p = Point 0 1
-o = Point 0 2
+-- Convierte un nonomino en una lista de puntos
+nonoToList :: Nonomino -> [Point]
+nonoToList n = [p0 n,p1 n,p2 n,p3 n, p4 n,p5 n,p6 n,p7 n,p8 n]
+
+-- Pone el valor del punto en la lista de puntos que representa un nonomino
+setValueInList _ [] = []
+setValueInList point1 (point2:points)  = if x_p point1 == x_p point2 && y_p point1 == y_p point2 then point1:points else point2:setValueInList point1 points
+
+-- recorre la lista de nonominos para buscar el punto que hay que sustituir,
+-- retorna una lista de nonominos con el punto cambiado
+setValue _ [] = []
+setValue point (nonomino:nonominos) = nonominoFromList(point `setValueInList` nonoToList nonomino): setValue point nonominos
+
+
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+
+
 
 n = Nonomino (Point 0 0 1) (Point 0 1 1) (Point 0 2 1) (Point 0 3 0) (Point 0 4 0) (Point 0 5 0) (Point 0 6 0) (Point 0 7 0) (Point 0 8 0)
 n1 = Nonomino (Point 1 0 1) (Point 1 1 1) (Point 1 2 1) (Point 1 3 0) (Point 1 4 0) (Point 1 5 0) (Point 1 6 0) (Point 1 7 0) (Point 1 8 0)
@@ -30,14 +52,16 @@ n2 = Nonomino (Point 2 0 1) (Point 2 1 2) (Point 2 2 3) (Point 2 3 4) (Point 2 4
 
 ll = [n,n1,n2]
 
--- Convierte un nonomino en una lista de puntos
-nonoToList :: Nonomino -> [Point]
-nonoToList n = [p0 n,p1 n,p2 n,p3 n, p4 n,p5 n,p6 n,p7 n,p8 n]
+
+
 -- Dice si un nonomino es valido (si no tiene numero que se repitan)
 --nonominoValido :: [Point] -> [Int] -> Bool
 nonominoValido [] _ = True
 nonominoValido ((Point _ _ value):nns) l = if value == 0 || value `elem` l  then nonominoValido nns [x | x <- l, x /= value || x == 0] else False
 
+-- comprueba que todos los nonominos son validos
+allNonominoValid [] = True
+allNonominoValid (nonomino:nonominos) =  (nonoToList nonomino  `nonominoValido` [1..9]) && allNonominoValid nonominos
 
 
 -- Devuelve todos los elementos de una fila
@@ -55,6 +79,10 @@ nonoSameValue (Point _ _ v1) (Point _ _ v2) = v1 == v2 && (v1 /= 0 || v2 /= 0)
 -- rotrna true si todas las filas y todas las columna estan bien (no tiene numeros repetidos)
 nonoAllRowOk nonomino = (==9) `all` map (\x -> length (nonoSameValue `nubBy` nonoToListRow nonomino x)) [0..8]
 nonoAllColumnOk nonomino = (==9) `all` map (\x -> length (nonoSameValue `nubBy` nonoToListColumn nonomino x)) [0..8]
+
+-- Dice si el tablero es valido verificando las filas las culumnas y los nonominos
+validBoard nonomino = allNonominoValid nonomino && nonoAllColumnOk nonomino && nonoAllRowOk nonomino
+
 
 
 
