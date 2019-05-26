@@ -140,6 +140,7 @@ buildEmptyBoard i = [nonominoFromList (map (\x -> Point x i (-1)) [0..8])] ++ bu
 -- le da un formato a los elementos del board para verlos en pantalla
 normalize [] = " |\n"
 normalize ((Point _ _ (-1)):ps) = " |  " ++ normalize ps
+normalize ((Point _ _ (0)):ps) = " |  " ++ normalize ps
 normalize ((Point _ _ value):ps) = " | "++(show (value)) ++ normalize ps
 
 --
@@ -166,11 +167,14 @@ tryOrder (nonoList:xs) board = let (val, pos) = putFigure nonoList board [(0,0)]
 -- recibe una lista de lista de puntos(nonominos) y una tupla (x,y) devuelve el nonomino con los puntos corridos
 --(abs ( (x_p firstPoint) - posX  ),abs ((y_p firstPoint) - posY ))
 moveNonomino_ [] _ = []
-moveNonomino_ (x:xs) (posX,posY) = (Point (abs  ((x_p x) - posX))   (abs ((y_p x) - posY))  (value x)): moveNonomino_ xs (posX,posY)
+moveNonomino_ (x:xs) (posX,posY) = (Point ((x_p x) + posX)  ((y_p x) + posY)  (value x)): moveNonomino_ xs (posX,posY)
 
 moveNonomino [] _ = []
 moveNonomino _ [] = []
-moveNonomino (x:xs) (pos:ps) = (moveNonomino_ (nonoToList x) pos):(moveNonomino xs ps)
+moveNonomino (x:xs) ((posX,posY):ps) = let
+                                    posx = abs ((x_p (p0 x)) - posX)
+                                    posy = abs ((y_p (p0 x)) - posY)
+                                in  (moveNonomino_ (nonoToList x) (posx,posy)):(moveNonomino xs ps)
 ---------------------------------------------------------CREA TABLERO CON LOS NONOMINOS CORRESPONDIENTES---------------------------------------------------------------------------
 
 --buildBoard (nonomino:xs) pos = (nonomino `setNonomino ` pos):
