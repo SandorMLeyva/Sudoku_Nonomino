@@ -18,6 +18,13 @@ data Nonomino = Nonomino {
     p8 :: Point
 } deriving Show
 
+instance Eq Point where
+        x == y = (x_p x == x_p y) && (y_p x == y_p y) && (value x == value y)
+
+instance Eq Nonomino where
+        x == y = (p0 x == p0 y) && (p1 x == p1 y) && (p2 x == p2 y) && (p3 x == p3 y) && (p4 x == p4 y) && (p5 x == p5 y) && (p6 x == p6 y) && (p7 x == p7 y) && (p8 x == p8 y)
+addCord (Point x1 y1 v1) (x2, y2) = Point (x1+x2) (y1+y2) v1
+
 -- Crea un nonomino a partir de una lista de puntos
 nonominoFromList nonomino = Nonomino (nonomino !! 0) (nonomino !! 1) (nonomino !! 2) (nonomino !! 3) (nonomino !! 4) (nonomino !! 5) (nonomino !! 6) (nonomino !! 7) (nonomino !! 8)
 
@@ -34,23 +41,18 @@ setValueInList point1 (point2:points)  = if x_p point1 == x_p point2 && y_p poin
 setValue _ [] = []
 setValue point (nonomino:nonominos) = nonominoFromList(point `setValueInList` nonoToList nonomino): setValue point nonominos
 
+-- poner aqui que x y sean iguales y que los v sean distintos de -1
+--samePoint (Point x1 y1 v1) (Point x2 y2 v2) = x1 == x2 && y1 == y2 &&  v2 /= -1
+samePoint (Point x1 y1 v1) nonomino = or [ x1 == x2 && y1 == y2 &&  v2 /= -1 | Point x2 y2 v2 <- nonoToList nonomino]
+
+-- dice si un punto existe en la lista de nonominos
+existValue _ [] = False
+existValue point (n:nonominos) = if samePoint point n then True else existValue point nonominos
+-----------------------------------------------------------------------------------------------------------------------------------------------
+--Complementos para trabajar con los nonominos
 
 
 
-
-------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-n = Nonomino (Point 0 0 1) (Point 0 1 1) (Point 0 2 1) (Point 0 3 0) (Point 0 4 0) (Point 0 5 0) (Point 0 6 0) (Point 0 7 0) (Point 0 8 0)
-n1 = Nonomino (Point 1 0 1) (Point 1 1 1) (Point 1 2 1) (Point 1 3 0) (Point 1 4 0) (Point 1 5 0) (Point 1 6 0) (Point 1 7 0) (Point 1 8 0)
-n2 = Nonomino (Point 2 0 1) (Point 2 1 2) (Point 2 2 3) (Point 2 3 4) (Point 2 4 5) (Point 2 5 6) (Point 2 6 7) (Point 2 7 8) (Point 2 8 0)
---n1 = Nonomino (Point 1 1 1) (Point 1 1 1) (Point 1 1 1) (Point 1 1 0) (Point 1 1 0) (Point 1 1 0) (Point 1 1 0) (Point 1 1 0) (Point 1 1 0)
---n2 = Nonomino (Point 1 1 10) (Point 0 1 3) (Point 0 1 4) (Point 0 2 0) (Point 7 3 5) (Point 0 1 7) (Point 0 1 0) (Point 0 3 9) (Point 0 1 0)
-
-ll = [n,n1,n2]
 
 
 
@@ -86,10 +88,132 @@ validBoard nonomino = allNonominoValid nonomino && nonoAllColumnOk nonomino && n
 
 
 
+-----------------------------------------------------------------------------------------------------------------------------------
+
+-- TODO poner un filtro que si el nonomino no tiene el punto (0,0) no comprobar las combinaciones en la q sea el primero !! ENTENDER BIEN EL CODIGO
+-- calcula las permutaciones de una lista
+permutations :: Eq a => [a] -> [[a]]
+permutations [] = [[]]
+permutations as = do a <- as
+                     let l = delete a as
+                     ls <- permutations l
+                     return $ a : ls
+
+first_ (x:_) =  x
+
+first ([]:xs) = first xs
+first (x:xs) = first_ x
+
+---- calcula la posicion mas arriba a la izquierda que este disponible
+-- calcula la proxima posicion inicial en el que se va a ubicar la siguiente figura
+newPos [] = (-1, -1) -- TODO: tener en cuenta ese valor de retorno, pq puede dar problemas
+newPos board =  first [  [ (x_p y, y_p y)  | y <- (nonoToListRow board i), value y == (-1) ] | i <- [0..8]]
+
+-- Pone la figura a partir del punto que se especifica
+insertFigure [] board _ = board
+insertFigure (point:points) board (posX, posY) = let newpoint = addCord point (posX, posY) in
+                                                if existValue newpoint board
+                                                then []
+                                                else insertFigure points (setValue newpoint board) (posX, posY)
+
+
+-- va por cada figura poniendo en la parte del nonomino con sus valores de x y correspondientes
+-- TODO ver el caso en que newPos retorna (-1,-1), nunca va a llegar a eso
+putFigure [] board _ = board
+putFigure (fig:figs) board (posX, posY) = let
+                                    firstPoint = p0 fig --asumiendo que el primer punto es el mas arriba a la izquierda
+                                    result = insertFigure  (nonoToList fig) board (abs ( (x_p firstPoint) - posX  ),abs ((y_p firstPoint)- posY ))
+                                in
+                                if result /= []
+                                then putFigure figs result (newPos result)
+                                else []
+
+
+
+-- esta funcion recibe la lista de nonomino(sin puntos x,y en el tablero del sudoku) y devuelve la lista de
+-- nonominos ya listos para el sudoku
+
+--zz =  permutations ll
+
+buildEmptyBoard 9 = []
+--buildEmptyBoard i = [nonominoFromList [ Point i j (-1) | j <- [0..8]]] ++ buildEmptyBoard (i+1)
+--buildEmptyBoard 0 = [nonominoFromList (map (\x -> Point x 0 1) [0..8])] ++ buildEmptyBoard (1)
+--buildEmptyBoard 1 = [nonominoFromList (map (\x -> Point x 1 1) [0..8])] ++ buildEmptyBoard (2)
+buildEmptyBoard i = [nonominoFromList (map (\x -> Point x i (-1)) [0..8])] ++ buildEmptyBoard (i+1)
+
+
+-------------------------------Start print board------------------------------------------
+
+-- le da un formato a los elementos del board para verlos en pantalla
+normalize [] = "\n"
+--normalize (p:ps) = p :(normalize ps)
+--normalize (p:ps) = ("punto "++ show (x_p p) ++ " : " ++ show (y_p p) ++ " -> " ++ show (value p)) ++ normalize ps
+normalize ((Point _ _ (-1)):ps) = " |  " ++ normalize ps
+normalize ((Point _ _ value):ps) = " | "++(show (value)) ++ normalize ps
+
+--
+printBoard_ _ 9 = ""
+printBoard_ board i = (normalize (nonoToListRow board i)) ++ printBoard_ board (i+1)
+--                    printBoard board (i+1)
+
+-- imprime board
+
+-------------------------------End print board------------------------------------------
+
+-- esta funcion es la que trata de poner las figuras siempre lo mas arriba hacia la izquierda
+-- board es un sudoku de nonominos, pero al principio todos sus puntos tiene valor -1
+-- para representar que no hay valor o punto valido
+-- figure es un nonomino con los puntos que representan la figura
+--tryOrder (figure:figres) board = let result = insertFigure $ nonoList figure in if length result /= 0 then
+
+
+-- va iterando por cada una de las permutaciones comprobando si sirve, en caso valida retorna el tablero
+--acomoda (nonoList:xs) board pos = let val = putFigure nonoList board pos in if  val /= [] then val else acomoda xs val
+acomoda [] board _ = board
+acomoda (nonoList:xs) board pos = let val = putFigure nonoList board pos in if  val /= [] then val else acomoda xs board pos
 
 
 
 
+------------------------------------------------------------------------------------------------------------------------------------------------
+
+------------------------- TEST ------------------------
+
+-- 1
+--n = Nonomino (Point 0 0 1) (Point 0 1 1) (Point 0 2 1) (Point 0 3 0) (Point 0 4 0) (Point 0 5 0) (Point 0 6 0) (Point 0 7 0) (Point 0 8 0)
+--n1 = Nonomino (Point 1 0 1) (Point 1 1 (-1)) (Point 1 2 1) (Point 1 3 0) (Point 1 4 0) (Point 1 5 0) (Point 1 6 0) (Point 1 7 0) (Point 1 8 0)
+--n2 = Nonomino (Point 2 0 1) (Point 2 1 2) (Point 2 2 3) (Point 2 3 4) (Point 2 4 5) (Point 2 5 6) (Point 2 6 7) (Point 2 7 8) (Point 2 8 0)
+--n1 = Nonomino (Point 1 1 1) (Point 1 1 1) (Point 1 1 1) (Point 1 1 0) (Point 1 1 0) (Point 1 1 0) (Point 1 1 0) (Point 1 1 0) (Point 1 1 0)
+--n2 = Nonomino (Point 1 1 10) (Point 0 1 3) (Point 0 1 4) (Point 0 2 0) (Point 7 3 5) (Point 0 1 7) (Point 0 1 0) (Point 0 3 9) (Point 0 1 0)
+--
+--ll = [n,n1,n2]
+ -- 2
+
+n0 = Nonomino (Point 0 0 1) (Point 1 0 2) (Point 2 0 5) (Point 0 1 0) (Point 1 1 4) (Point 2 1 0) (Point 0 2 0) (Point 1 2 9) (Point 2 2 0)
+n1 = Nonomino (Point 3 0 2) (Point 3 1 2) (Point 3 2 2) (Point 3 3 2) (Point 4 3 2) (Point 2 3 2) (Point 1 3 2) (Point 0 3 2) (Point 0 4 2)
+n2 = Nonomino (Point 2 0 3) (Point 2 1 3) (Point 2 2 3) (Point 3 2 3) (Point 3 3 3) (Point 3 4 3) (Point 2 4 3) (Point 1 4 3) (Point 0 4 3)
+----
+n3 = Nonomino (Point 0 0 4) (Point 1 0 4) (Point 2 0 4) (Point 0 1 4) (Point 1 1 4) (Point 2 1 4) (Point 1 2 4) (Point 3 0 4) (Point 3 1 4)
+n4 = Nonomino (Point 1 0 5) (Point 0 2 5) (Point 1 2 5) (Point 1 1 5) (Point 0 1 5) (Point 2 0 5) (Point 2 1 5) (Point 2 2 5) (Point 2 3 5)
+n5 = Nonomino (Point 1 0 6) (Point 1 1 6) (Point 0 1 6) (Point 2 1 6) (Point 3 1 6) (Point 4 1 6) (Point 5 1 6) (Point 6 1 6) (Point 7 1 6)
+--
+n6 =  Nonomino (Point 0 0 1) (Point 1 0 1) (Point 2 0 1) (Point 0 1 0) (Point 1 1 0) (Point 2 1 0) (Point 0 2 0) (Point 1 2 0) (Point 2 2 0)
+n7 = Nonomino (Point 0 0 1) (Point 1 0 1) (Point 2 0 1) (Point 3 0 0) (Point 4 0 0) (Point 5 0 0) (Point 5 1 0) (Point 5 2 0) (Point 4 2 0)
+n8 = Nonomino (Point 0 0 1) (Point 1 0 2) (Point 2 0 3) (Point 3 0 4) (Point 4 0 5) (Point 0 1 6) (Point 1 1 7) (Point 2 1 8) (Point 3 1 0)
+
+la = [n0,n1,n2,n3,n4,n5,n6,n7,n8]
+
+pp = permutations la
+
+
+
+
+printBoard = putStr (printBoard_ (putFigure [n0,n1,n2,n3,n4,n5,n6,n7,n8] (buildEmptyBoard 0) (0,0)) 0)
+
+qq = newPos (putFigure [n0,n1,n2,n3] (buildEmptyBoard 0) (0,0))
+
+zz = nonoToListRow (putFigure [n0,n1] (buildEmptyBoard 0) (0,0)) 0
+zq =  newPos (buildEmptyBoard 0)
 
 
 
