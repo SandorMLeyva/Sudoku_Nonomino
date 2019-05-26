@@ -86,8 +86,6 @@ nonoAllColumnOk nonomino = (==9) `all` map (\x -> length (nonoSameValue `nubBy` 
 validBoard nonomino = allNonominoValid nonomino && nonoAllColumnOk nonomino && nonoAllRowOk nonomino
 
 
-
-
 -----------------------------------------------------------------------------------------------------------------------------------
 
 -- TODO poner un filtro que si el nonomino no tiene el punto (0,0) no comprobar las combinaciones en la q sea el primero !! ENTENDER BIEN EL CODIGO
@@ -130,24 +128,15 @@ putFigure (fig:figs) board (posX, posY) = let
 
 
 
--- esta funcion recibe la lista de nonomino(sin puntos x,y en el tablero del sudoku) y devuelve la lista de
--- nonominos ya listos para el sudoku
-
---zz =  permutations ll
 
 buildEmptyBoard 9 = []
---buildEmptyBoard i = [nonominoFromList [ Point i j (-1) | j <- [0..8]]] ++ buildEmptyBoard (i+1)
---buildEmptyBoard 0 = [nonominoFromList (map (\x -> Point x 0 1) [0..8])] ++ buildEmptyBoard (1)
---buildEmptyBoard 1 = [nonominoFromList (map (\x -> Point x 1 1) [0..8])] ++ buildEmptyBoard (2)
 buildEmptyBoard i = [nonominoFromList (map (\x -> Point x i (-1)) [0..8])] ++ buildEmptyBoard (i+1)
 
 
 -------------------------------Start print board------------------------------------------
 
 -- le da un formato a los elementos del board para verlos en pantalla
-normalize [] = "\n"
---normalize (p:ps) = p :(normalize ps)
---normalize (p:ps) = ("punto "++ show (x_p p) ++ " : " ++ show (y_p p) ++ " -> " ++ show (value p)) ++ normalize ps
+normalize [] = " |\n"
 normalize ((Point _ _ (-1)):ps) = " |  " ++ normalize ps
 normalize ((Point _ _ value):ps) = " | "++(show (value)) ++ normalize ps
 
@@ -168,9 +157,9 @@ printBoard_ board i = (normalize (nonoToListRow board i)) ++ printBoard_ board (
 
 
 -- va iterando por cada una de las permutaciones comprobando si sirve, en caso valida retorna el tablero
---acomoda (nonoList:xs) board pos = let val = putFigure nonoList board pos in if  val /= [] then val else acomoda xs val
-acomoda [] board _ = board
-acomoda (nonoList:xs) board pos = let val = putFigure nonoList board pos in if  val /= [] then val else acomoda xs board pos
+--tryOrder (nonoList:xs) board pos = let val = putFigure nonoList board pos in if  val /= [] then val else tryOrder xs val
+tryOrder [] board _ = []
+tryOrder (nonoList:xs) board pos = let val = putFigure nonoList board pos in if  val /= [] then val else tryOrder xs board pos
 
 
 
@@ -202,13 +191,15 @@ n7 = Nonomino (Point 0 0 1) (Point 1 0 1) (Point 2 0 1) (Point 3 0 0) (Point 4 0
 n8 = Nonomino (Point 0 0 1) (Point 1 0 2) (Point 2 0 3) (Point 3 0 4) (Point 4 0 5) (Point 0 1 6) (Point 1 1 7) (Point 2 1 8) (Point 3 1 0)
 
 la = [n0,n1,n2,n3,n4,n5,n6,n7,n8]
+lb = [n0,n1,n2,n4,n3,n5,n6,n7,n8]
 
-pp = permutations la
+pp = permutations lb
 
 
+printBoard = putStr (printBoard_ (putFigure la (buildEmptyBoard 0) (0,0)) 0)
+printBoard2 = putStr (printBoard_ (tryOrder pp (buildEmptyBoard 0)(0,0)) 0)
 
-
-printBoard = putStr (printBoard_ (putFigure [n0,n1,n2,n3,n4,n5,n6,n7,n8] (buildEmptyBoard 0) (0,0)) 0)
+bb = (tryOrder pp (buildEmptyBoard 0)(0,0))
 
 qq = newPos (putFigure [n0,n1,n2,n3] (buildEmptyBoard 0) (0,0))
 
