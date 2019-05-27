@@ -3,7 +3,6 @@ module Builder where
     import Nonomino
     import Point
 
-    -- TODO poner un filtro que si el nonomino no tiene el punto (0,0) no comprobar las combinaciones en la q sea el primero !! ENTENDER BIEN EL CODIGO
     -- calcula las permutaciones de una lista
     permutations :: Eq a => [a] -> [[a]]
     permutations [] = [[]]

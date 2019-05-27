@@ -7,7 +7,6 @@ import Test
 import Data.List
 
 
-
 perm = permutations la
 boardReady = tryOrder perm (buildEmptyBoard 0)
 boardEnd = map (\x -> nonominoFromList x) (moveNonomino (fst boardReady) (take 9 (snd boardReady )))
