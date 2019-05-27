@@ -1,37 +1,12 @@
--- # LANGUAGE OverloadedStrings #
--- module Main where
+module Point where
 
-import qualified Data.Text.IO          as T
-import           System.Console.Pretty (Color (..), Style (..), bgColor, color,
-                                        style, supportsPretty)
+    data Point = Point {
+        x_p :: Integer,
+        y_p :: Integer,
+        value :: Integer
+    } deriving Show
 
--- main :: IO ()
--- main = do
---   inColor <- supportsPretty
---   if inColor then example
---              else putStrLn "Sorry, this terminal doesn't support pretty ANSI codes"
+    instance Eq Point where
+            x == y = (x_p x == x_p y) && (y_p x == y_p y) && (value x == value y)
 
--- example :: IO ()
-example = putStrLn ( style Underline "hello there!" )
- 
-  -- simple style
-  
-  -- simple color
-  -- putStrLn ( color Yellow "this lib was designed to be easy" )
 
-  -- -- simple background
-  -- putStrLn ( bgColor Blue "and the functions layer together easily" )
-
-  -- -- combining
-  -- putStrLn ( bgColor White . color Red . style Bold $ "like so!" )
-
-  -- -- custom style & color
-  -- let primary = bgColor Magenta . color Green . style Italic
-  -- putStrLn ( primary "easily create your own helpers & styles" )
-
-  -- -- with both unicode string types
-  -- putStrLn ( color Cyan "String...")
-  -- T.putStrLn (color Red "and Text")
-
-  -- -- set styling to none
-  -- putStrLn ( primary $ style Normal "or if you need to remove any styling..." )
