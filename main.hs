@@ -65,14 +65,16 @@ nonominoValid ((Point _ _ value):nns) l = if value == 0 || value `elem` l  then 
 allNonominoValid [] = True
 allNonominoValid (nonomino:nonominos) =  (nonoToList nonomino  `nonominoValid` [1..9]) && allNonominoValid nonominos
 
+compareRow a b  = compare (x_p a) (x_p b)
+compareColumn a b  = compare (y_p a) (y_p b)
 
 -- Devuelve todos los elementos de una fila
 --nonoToListRow, nonoToListColumn :: [Nonomino] -> Int -> [Point]
 nonoToListRow [] _ = []
-nonoToListRow (nnl:nnls) i = [x | x <- nonoToList nnl, y_p x == i ] ++ nonoToListRow nnls i
+nonoToListRow (nnl:nnls) i = sortBy compareRow ([x | x <- nonoToList nnl, y_p x == i ] ++ nonoToListRow nnls i)
 -- Devuelve todos los elementos de una columna
 nonoToListColumn [] _ = []
-nonoToListColumn (nnl:nnls) i = [x | x <- nonoToList nnl, x_p x == i ] ++ nonoToListColumn nnls i
+nonoToListColumn (nnl:nnls) i = sortBy compareColumn ([x | x <- nonoToList nnl, x_p x == i ] ++ nonoToListColumn nnls i)
 
 -- funcion auxiliar para saber si dos puntos son iguales en caso de que se este comparando con un punto
 -- que no tiene valor igual de True
@@ -136,16 +138,30 @@ buildEmptyBoard i = [nonominoFromList (map (\x -> Point x i (-1)) [0..8])] ++ bu
 
 
 -------------------------------Start print board------------------------------------------
+idColor 0 = "\x1b[41m"
+idColor 1 = "\x1b[42m"
+idColor 2 = "\x1b[43m"
+idColor 3 = "\x1b[44m"
+idColor 4 = "\x1b[45m"
+idColor 5 = "\x1b[46m"
+idColor 6 = "\x1b[41m"
+idColor 7 = "\x1b[42m"
+idColor 8 = "\x1b[43m"
+
+inNonomino _ [] = False
+inNonomino (Point x y v) ((Point x1 y1 _):ps) = (x == x1 && y == y1) || inNonomino (Point x y v) ps
+
+getColor point (nonomino:board) i = if point `inNonomino` (nonoToList nonomino) then idColor i else getColor point board (i+1)
 
 -- le da un formato a los elementos del board para verlos en pantalla
-normalize [] = " |\n"
-normalize ((Point _ _ (-1)):ps) = " |  " ++ normalize ps
-normalize ((Point _ _ (0)):ps) = " |  " ++ normalize ps
-normalize ((Point _ _ value):ps) = " | "++(show (value)) ++ normalize ps
+normalize [] _ = " |\n"
+normalize ((Point x y (-1)):ps) board = let color = getColor (Point x y (-1))  board 0 in  color ++ " |  " ++ normalize ps board
+normalize ((Point x y (0)):ps) board = let color = getColor (Point x y 0) board 0 in  color ++ " |  " ++ normalize ps board
+normalize ((Point x y value):ps) board= let color = getColor (Point x y value) board 0 in " | "++ color ++(show (value)) ++ normalize ps board
 
 --
 printBoard_ _ 9 = ""
-printBoard_ board i = (normalize (nonoToListRow board i)) ++ printBoard_ board (i+1)
+printBoard_ board i = (normalize (nonoToListRow board i) board) ++ printBoard_ board (i+1)
 --                    printBoard board (i+1)
 
 -- imprime board
@@ -183,57 +199,111 @@ moveNonomino (x:xs) ((posX,posY):ps) = let
 
 ------------------------- TEST ------------------------
 
-
-n0 = Nonomino (Point 0 0 1) (Point 1 0 2) (Point 2 0 5) (Point 0 1 0) (Point 1 1 4) (Point 2 1 0) (Point 0 2 0) (Point 1 2 9) (Point 2 2 0)
-n1 = Nonomino (Point 3 0 2) (Point 3 1 2) (Point 3 2 2) (Point 3 3 2) (Point 4 3 2) (Point 2 3 2) (Point 1 3 2) (Point 0 3 2) (Point 0 4 2)
-n2 = Nonomino (Point 2 0 3) (Point 2 1 3) (Point 2 2 3) (Point 3 2 3) (Point 3 3 3) (Point 3 4 3) (Point 2 4 3) (Point 1 4 3) (Point 0 4 3)
+-- test1
+--n0 = Nonomino (Point 0 0 0) (Point 1 0 0) (Point 2 0 0) (Point 0 1 0) (Point 1 1 0) (Point 2 1 0) (Point 0 2 0) (Point 1 2 0) (Point 2 2 0)
+--n1 = Nonomino (Point 3 0 0) (Point 3 1 0) (Point 3 2 0) (Point 3 3 0) (Point 4 3 0) (Point 2 3 0) (Point 1 3 0) (Point 0 3 0) (Point 0 4 0)
+--n2 = Nonomino (Point 2 0 0) (Point 2 1 0) (Point 2 2 0) (Point 3 2 0) (Point 3 3 0) (Point 3 4 0) (Point 2 4 0) (Point 1 4 0) (Point 0 4 0)
+------
+--n3 = Nonomino (Point 0 0 0) (Point 1 0 0) (Point 2 0 0) (Point 0 1 0) (Point 1 1 0) (Point 2 1 0) (Point 1 2 0) (Point 3 0 0) (Point 3 1 0)
+--n4 = Nonomino (Point 1 0 0) (Point 1 1 0) (Point 0 1 0) (Point 0 2 0) (Point 1 2 0) (Point 2 0 0) (Point 2 1 0) (Point 2 2 0) (Point 2 3 0)
+--n5 = Nonomino (Point 1 0 0) (Point 1 1 0) (Point 0 1 0) (Point 2 1 0) (Point 3 1 0) (Point 4 1 0) (Point 5 1 0) (Point 6 1 0) (Point 7 1 0)
 ----
-n3 = Nonomino (Point 0 0 4) (Point 1 0 4) (Point 2 0 4) (Point 0 1 4) (Point 1 1 4) (Point 2 1 4) (Point 1 2 4) (Point 3 0 4) (Point 3 1 4)
-n4 = Nonomino (Point 1 0 5) (Point 0 2 5) (Point 1 2 5) (Point 1 1 5) (Point 0 1 5) (Point 2 0 5) (Point 2 1 5) (Point 2 2 5) (Point 2 3 5)
-n5 = Nonomino (Point 1 0 6) (Point 1 1 6) (Point 0 1 6) (Point 2 1 6) (Point 3 1 6) (Point 4 1 6) (Point 5 1 6) (Point 6 1 6) (Point 7 1 6)
+--n6 = Nonomino (Point 0 0 0) (Point 1 0 0) (Point 2 0 0) (Point 0 1 0) (Point 1 1 0) (Point 2 1 0) (Point 0 2 0) (Point 1 2 0) (Point 2 2 0)
+--n7 = Nonomino (Point 0 0 0) (Point 1 0 0) (Point 2 0 0) (Point 3 0 0) (Point 4 0 0) (Point 5 0 0) (Point 5 1 0) (Point 5 2 0) (Point 4 2 0)
+--n8 = Nonomino (Point 0 0 0) (Point 1 0 0) (Point 2 0 0) (Point 3 0 0) (Point 4 0 0) (Point 0 1 0) (Point 1 1 0) (Point 2 1 0) (Point 3 1 0)
+
+------test2
+--n0 = Nonomino (Point 0 0 0) (Point 1 0 0) (Point 2 0 0) (Point 3 0 1) (Point 4 0 0) (Point 1 1 0) (Point 2 1 0) (Point 3 1 0) (Point 2 2 0)
+--n1 = Nonomino (Point 1 0 2) (Point 2 0 0) (Point 3 0 3) (Point 4 0 0) (Point 0 1 0) (Point 1 1 0) (Point 2 1 0) (Point 3 1 9) (Point 4 1 0)
+--n2 = Nonomino (Point 0 0 6) (Point 0 1 0) (Point 0 2 8) (Point 1 1 0) (Point 1 2 0) (Point 2 2 0) (Point 2 3 4) (Point 3 2 0) (Point 3 1 0)
+------
+--n3 = Nonomino (Point 0 0 0) (Point 1 0 0) (Point 2 0 0) (Point 3 0 8) (Point 4 0 0) (Point 3 1 0) (Point 3 2 0) (Point 4 1 0) (Point 4 2 0)
+--n4 = Nonomino (Point 3 0 7) (Point 3 1 0) (Point 2 1 5) (Point 2 2 0) (Point 1 2 2) (Point 1 3 9) (Point 1 4 1) (Point 1 5 0) (Point 0 5 0)
+--n5 = Nonomino (Point 1 0 4) (Point 2 0 0) (Point 1 1 6) (Point 2 1 0) (Point 0 2 0) (Point 1 2 0) (Point 2 2 0) (Point 2 3 0) (Point 2 4 0)
+----
+--n6 = Nonomino (Point 0 0 0) (Point 0 1 0) (Point 0 2 3) (Point 0 3 4) (Point 0 4 0) (Point 1 0 0) (Point 1 1 0) (Point 1 2 0) (Point 1 3 0)
+--n7 = Nonomino (Point 1 0 0) (Point 2 0 0) (Point 1 1 0) (Point 2 1 0) (Point 1 2 0) (Point 2 2 0) (Point 1 3 7) (Point 2 3 0) (Point 0 3 0)
+--n8 = Nonomino (Point 0 0 8) (Point 1 0 0) (Point 2 0 5) (Point 0 1 7) (Point 1 1 0) (Point 2 1 9) (Point 0 2 3) (Point 1 2 6) (Point 2 2 0)
+
+------ test3
+--n0 = Nonomino (Point 0 0 0) (Point 1 0 0) (Point 2 0 7) (Point 3 0 1) (Point 4 0 8) (Point 1 1 2) (Point 2 1 3) (Point 3 1 4) (Point 2 2 6)
+--n1 = Nonomino (Point 1 0 2) (Point 2 0 0) (Point 3 0 0) (Point 4 0 4) (Point 0 1 0) (Point 1 1 8) (Point 2 1 7) (Point 3 1 9) (Point 4 1 5)
+--n2 = Nonomino (Point 0 0 6) (Point 0 1 7) (Point 0 2 8) (Point 1 1 1) (Point 1 2 0) (Point 2 2 0) (Point 2 3 4) (Point 3 2 0) (Point 3 1 0)
+------
+--n3 = Nonomino (Point 0 0 0) (Point 1 0 0) (Point 2 0 0) (Point 3 0 8) (Point 4 0 0) (Point 3 1 0) (Point 3 2 0) (Point 4 1 0) (Point 4 2 0)
+--n4 = Nonomino (Point 3 0 7) (Point 3 1 0) (Point 2 1 5) (Point 2 2 0) (Point 1 2 0) (Point 1 3 9) (Point 1 4 1) (Point 1 5 0) (Point 0 5 0)
+--n5 = Nonomino (Point 1 0 4) (Point 2 0 0) (Point 1 1 6) (Point 2 1 0) (Point 0 2 0) (Point 1 2 0) (Point 2 2 0) (Point 2 3 0) (Point 2 4 0)
+----
+--n6 = Nonomino (Point 0 0 0) (Point 0 1 0) (Point 0 2 3) (Point 0 3 4) (Point 0 4 0) (Point 1 0 0) (Point 1 1 0) (Point 1 2 0) (Point 1 3 0)
+--n7 = Nonomino (Point 1 0 0) (Point 2 0 0) (Point 1 1 0) (Point 2 1 0) (Point 1 2 0) (Point 2 2 0) (Point 1 3 7) (Point 2 3 0) (Point 0 3 0)
+--n8 = Nonomino (Point 0 0 8) (Point 1 0 4) (Point 2 0 5) (Point 0 1 7) (Point 1 1 2) (Point 2 1 9) (Point 0 2 3) (Point 1 2 6) (Point 2 2 1)
+
+---- test4
+n0 = Nonomino (Point 0 0 0) (Point 1 0 0) (Point 2 0 7) (Point 3 0 1) (Point 4 0 8) (Point 1 1 2) (Point 2 1 3) (Point 3 1 4) (Point 2 2 6)
+n1 = Nonomino (Point 1 0 0) (Point 2 0 0) (Point 3 0 0) (Point 4 0 4) (Point 0 1 0) (Point 1 1 8) (Point 2 1 7) (Point 3 1 9) (Point 4 1 5)
+n2 = Nonomino (Point 0 0 6) (Point 0 1 7) (Point 0 2 8) (Point 1 1 1) (Point 1 2 0) (Point 2 2 0) (Point 2 3 4) (Point 3 2 0) (Point 3 1 0)
+----
+n3 = Nonomino (Point 0 0 0) (Point 1 0 0) (Point 2 0 0) (Point 3 0 8) (Point 4 0 0) (Point 3 1 0) (Point 3 2 0) (Point 4 1 0) (Point 4 2 0)
+n4 = Nonomino (Point 3 0 7) (Point 3 1 0) (Point 2 1 5) (Point 2 2 0) (Point 1 2 0) (Point 1 3 9) (Point 1 4 1) (Point 1 5 0) (Point 0 5 0)
+n5 = Nonomino (Point 1 0 0) (Point 2 0 0) (Point 1 1 6) (Point 2 1 0) (Point 0 2 0) (Point 1 2 0) (Point 2 2 0) (Point 2 3 0) (Point 2 4 0)
 --
-n6 = Nonomino (Point 0 0 1) (Point 1 0 1) (Point 2 0 1) (Point 0 1 0) (Point 1 1 0) (Point 2 1 0) (Point 0 2 0) (Point 1 2 0) (Point 2 2 0)
-n7 = Nonomino (Point 0 0 1) (Point 1 0 1) (Point 2 0 1) (Point 3 0 0) (Point 4 0 0) (Point 5 0 0) (Point 5 1 0) (Point 5 2 0) (Point 4 2 0)
-n8 = Nonomino (Point 0 0 1) (Point 1 0 2) (Point 2 0 3) (Point 3 0 4) (Point 4 0 5) (Point 0 1 6) (Point 1 1 7) (Point 2 1 8) (Point 3 1 0)
+n6 = Nonomino (Point 0 0 0) (Point 0 1 0) (Point 0 2 3) (Point 0 3 4) (Point 0 4 0) (Point 1 0 0) (Point 1 1 0) (Point 1 2 0) (Point 1 3 0)
+n7 = Nonomino (Point 1 0 0) (Point 2 0 0) (Point 1 1 0) (Point 2 1 0) (Point 1 2 0) (Point 2 2 0) (Point 1 3 7) (Point 2 3 0) (Point 0 3 0)
+n8 = Nonomino (Point 0 0 8) (Point 1 0 0) (Point 2 0 5) (Point 0 1 0) (Point 1 1 2) (Point 2 1 9) (Point 0 2 3) (Point 1 2 6) (Point 2 2 1)
+
 
 la = [n0,n1,n2,n3,n4,n5,n6,n7,n8]
 lb = [n0,n1,n2,n4,n3,n5,n6,n7,n8]
 
-pp = permutations lb
+pp = permutations la
 
 --
 --printBoard = putStr (printBoard_ (fst (putFigure la (buildEmptyBoard 0) [(0,0)])) 0)
 --
 ---- lista de nonomino en el orden en que se van a poner
-q = tryOrder pp (buildEmptyBoard 0)
-qw1 = fst q
-qw0 = snd q
 
+---------------------Aqui queda el sudoku listo para resolverlo-----------------------
+q = tryOrder pp (buildEmptyBoard 0)                                                 --
+qw1 = fst q                                                                         --
+qw0 = take 9 (snd q )                                                               --
 nonoFinal = moveNonomino qw1 qw0
 boardEnd = map (\x -> nonominoFromList x) nonoFinal
 printBoard = putStr (printBoard_  boardEnd 0)
----- deja la lista de indices por donde empieza cada nonomino
+---------------------------------------------------------------------------------------
+emptyPoints_ [] = []
+emptyPoints_ ((Point x y 0):ps) = (Point x y 0): emptyPoints_ ps
+emptyPoints_ ((Point x y _):ps) = emptyPoints_ ps
+
+-- recibe la lista de nonominos (los nonominos en forma de lista)
+emptyPoints [] = []
+emptyPoints (x:xs) = emptyPoints_ x ++ emptyPoints xs
+
+isValid (Point x y v) board =  validBoard (setValue (Point x y v) board)
+
+-- recibe el board , es decir la lista de nonominos
+--solve board = emptyPoints ([ nonoToList x | x <- board ])
+solve board = solve_ (emptyPoints ([ nonoToList x | x <- board ])) board
+            where
+                solve_ [] board = [board]
+                solve_ ((Point x y value):xs) board = concatMap (solve_ xs) candidatesBoards
+                    where
+                        candidatesValues = [v |v <- [1..9], isValid (Point x y v) board ] --impl isValid
+                        candidatesBoards = map (\z -> setValue (Point x y z) board) candidatesValues
 --
---qw2 = putFigure la (buildEmptyBoard 0) [(0,0)]
---
---
---qr = print (moveNonomino  qw qe)
---printBoard2 = putStr (printBoard_ qw 0)
 
+-- esto es lo q se le pasa para la variable empty = emptyPoints ([ nonoToList x | x <- board ])
+ss board = solve2 board (emptyPoints ([ nonoToList x | x <- board ]))
+solve2 board [] = (board, True)
+solve2 board ((Point x y _):emptys) = solve2_ [ Point x y i | i <- [1..9], isValid (Point x y i) board ] board emptys
+                        where
+                            solve2_ [] board (vx:vxs) = (board, False)
+                            solve2_ (validPoint:vps) board emptys =
+                                let result = solve2 (setValue validPoint board) emptys
+                                in if snd result then  result else solve2_ vps board emptys
+ass = fst (ss  boardEnd)
 
-
-----printBoard2 = putStr (printBoard_ (tryOrder pp (buildEmptyBoard 0)(0,0)) 0)
---
---bb = (tryOrder pp (buildEmptyBoard 0))
---
---qq = newPos (putFigure [n0,n1,n2,n3] (buildEmptyBoard 0) (0,0))
---
---zz = nonoToListRow (putFigure [n0,n1] (buildEmptyBoard 0) (0,0)) 0
---zq =  newPos (buildEmptyBoard 0)
-
-
-
-
+printBoard2 = putStr (printBoard_  ass 0)
+printBoard3 = putStr (printBoard_   (head (solve  boardEnd)) 0)
 
 
 
