@@ -56,5 +56,11 @@ module Test where
     n8 = Nonomino (Point 0 0 8) (Point 1 0 0) (Point 2 0 5) (Point 0 1 0) (Point 1 1 2) (Point 2 1 9) (Point 0 2 3) (Point 1 2 6) (Point 2 2 1)
 
 
-    la = [n0,n1,n2,n3,n4,n5,n6,n7,n8]
+    la = [n0,n1,n2,n3,n4,n5,n6,n8,n7]
     lb = [n0,n1,n2,n4,n3,n5,n6,n7,n8]
+
+
+    -------------
+    --  Definir los nonominos --
+    --  una lista de nonominos representa un sudoku --
+    --  crear una lista con los nonominos no necesariamente en el orden correcto
